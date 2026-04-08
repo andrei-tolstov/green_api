@@ -1,0 +1,39 @@
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    command: ["sh", "/app/entrypoint.sh"]
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+      - db_volume:/app/data
+    env_file:
+      - .env
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "curl", "-s", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  angie:
+    image: docker.angie.software/angie:minimal
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./angie/angie.conf:/etc/angie/http.d/default.conf:ro
+      - angie_state:/var/lib/angie
+      - static_volume:/app/staticfiles:ro
+      - media_volume:/app/media:ro
+    depends_on:
+      web:
+        condition: service_healthy
+
+volumes:
+  static_volume:
+  media_volume:
+  db_volume:
+  angie_state:
